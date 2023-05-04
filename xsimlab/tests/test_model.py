@@ -113,8 +113,8 @@ class TestModelBuilder:
         assert m.b.__xsimlab_state_keys__["g2"] == [("a", "v")]
 
     def test_get_all_variables(self, model):
-        assert all([len(t) == 2 for t in model.all_vars])
-        assert all([p_name in model for p_name, _ in model.all_vars])
+        assert all(len(t) == 2 for t in model.all_vars)
+        assert all(p_name in model for p_name, _ in model.all_vars)
         assert ("profile", "u") in model.all_vars
 
     def test_ensure_no_intent_conflict(self, model):
@@ -202,23 +202,21 @@ class TestModel:
         assert model["profile"] is model.profile
 
     def test_all_vars_dict(self, model):
-        assert all([p_name in model for p_name in model.all_vars_dict])
-        assert all(
-            [isinstance(p_vars, list) for p_vars in model.all_vars_dict.values()]
-        )
+        assert all(p_name in model for p_name in model.all_vars_dict)
+        assert all(isinstance(p_vars, list) for p_vars in model.all_vars_dict.values())
         assert "u" in model.all_vars_dict["profile"]
 
     def test_index_vars_dict(self, model):
-        assert all([p_name in model for p_name in model.index_vars_dict])
+        assert all(p_name in model for p_name in model.index_vars_dict)
         assert all(
-            [isinstance(p_vars, list) for p_vars in model.index_vars_dict.values()]
+            isinstance(p_vars, list) for p_vars in model.index_vars_dict.values()
         )
         assert "x" in model.index_vars_dict["init_profile"]
 
     def test_input_vars_dict(self, model):
-        assert all([p_name in model for p_name in model.input_vars_dict])
+        assert all(p_name in model for p_name in model.input_vars_dict)
         assert all(
-            [isinstance(p_vars, list) for p_vars in model.input_vars_dict.values()]
+            isinstance(p_vars, list) for p_vars in model.input_vars_dict.values()
         )
         assert "n_points" in model.input_vars_dict["init_profile"]
 

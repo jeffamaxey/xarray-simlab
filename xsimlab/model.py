@@ -83,9 +83,7 @@ def get_global_refs(processes_cls):
             if var.metadata["var_type"] != VarType.GLOBAL and global_name is not None:
                 temp_refs[global_name].append((p_name, var))
 
-    global_refs = {k: v if len(v) > 1 else v[0] for k, v in temp_refs.items()}
-
-    return global_refs
+    return {k: v if len(v) > 1 else v[0] for k, v in temp_refs.items()}
 
 
 class _ModelBuilder:
@@ -331,10 +329,11 @@ class _ModelBuilder:
             raise ValueError(f"Conflict(s) found in given variable intents:\n{msg}")
 
     def get_variables(self, **kwargs):
-        if not len(kwargs):
-            return self._all_vars
-        else:
-            return get_model_variables(self._processes_cls, **kwargs)
+        return (
+            get_model_variables(self._processes_cls, **kwargs)
+            if len(kwargs)
+            else self._all_vars
+        )
 
     def get_input_variables(self):
         """Get all input variables in the model as a list of
@@ -413,16 +412,15 @@ class _ModelBuilder:
         """
         self._dep_processes = {k: set() for k in self._processes_obj}
 
-        d_keys = {}  # all state/on-demand keys for each process
-
-        for p_name, p_obj in self._processes_obj.items():
-            d_keys[p_name] = _flatten_keys(
+        d_keys = {
+            p_name: _flatten_keys(
                 [
                     p_obj.__xsimlab_state_keys__.values(),
                     p_obj.__xsimlab_od_keys__.values(),
                 ]
             )
-
+            for p_name, p_obj in self._processes_obj.items()
+        }
         for p_name, p_obj in self._processes_obj.items():
             for var in filter_variables(p_obj, intent=VarIntent.OUT).values():
                 if var.metadata["var_type"] == VarType.ON_DEMAND:
@@ -579,7 +577,7 @@ class Model(AttrMapping):
         self._initialized = True
 
     def _get_vars_dict_from_cache(self, attr_name):
-        dict_attr_name = attr_name + "_dict"
+        dict_attr_name = f"{attr_name}_dict"
 
         if getattr(self, dict_attr_name) is None:
             vars_d = defaultdict(list)
@@ -741,7 +739,7 @@ class Model(AttrMapping):
                 self._state[key] = copy.copy(value)
 
         if validate:
-            p_names = set([pn for pn, _ in input_vars if pn in self._processes])
+            p_names = {pn for pn, _ in input_vars if pn in self._processes}
             self.validate(p_names)
 
     @property
@@ -803,15 +801,11 @@ class Model(AttrMapping):
         for h in event_hooks:
             s = h(self, Frozen(runtime_context), Frozen(self.state))
 
-            if s is None:
-                s = RuntimeSignal(0)
-            else:
-                s = RuntimeSignal(s)
-
+            s = RuntimeSignal(0) if s is None else RuntimeSignal(s)
             signals.append(s)
 
         # Signal with highest value has highest priority
-        return RuntimeSignal(max([s.value for s in signals]))
+        return RuntimeSignal(max(s.value for s in signals))
 
     def _execute_process(
         self, p_obj, stage, runtime_context, hooks, validate, state=None
@@ -905,7 +899,7 @@ class Model(AttrMapping):
         # process order matters for properly updating state!
         for p_name in self._processes:
             state_out, signal_out = exec_outputs[p_name]
-            new_state.update(state_out)
+            new_state |= state_out
             if signal_out.value > signal.value:
                 signal = signal_out
 
@@ -1025,9 +1019,7 @@ class Model(AttrMapping):
                 if signal_process == RuntimeSignal.BREAK:
                     break
 
-        signal_post = self._call_hooks(hooks, runtime_context, stage, "model", "post")
-
-        return signal_post
+        return self._call_hooks(hooks, runtime_context, stage, "model", "post")
 
     def clone(self):
         """Clone the Model.
@@ -1057,7 +1049,7 @@ class Model(AttrMapping):
 
         """
         processes_cls = {k: type(obj) for k, obj in self._processes.items()}
-        processes_cls.update(processes)
+        processes_cls |= processes
         return type(self)(processes_cls)
 
     def drop_processes(self, keys):
@@ -1083,16 +1075,16 @@ class Model(AttrMapping):
         return type(self)(processes_cls)
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-
-        for (k1, v1), (k2, v2) in zip(
-            self._processes.items(), other._processes.items()
-        ):
-            if k1 != k2 or type(v1) is not type(v2):
-                return False
-
-        return True
+        return (
+            not any(
+                k1 != k2 or type(v1) is not type(v2)
+                for (k1, v1), (k2, v2) in zip(
+                    self._processes.items(), other._processes.items()
+                )
+            )
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __enter__(self):
         if len(Model.active):

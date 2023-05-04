@@ -154,10 +154,11 @@ def test_group():
 
 
 def test_group_dict():
+
     @attr.attrs
     class Foo:
         bar = xs.group_dict("g")
 
     # test init with default dict value
     foo = Foo()
-    assert foo.bar == dict()
+    assert foo.bar == {}

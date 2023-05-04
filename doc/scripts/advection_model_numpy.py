@@ -23,7 +23,7 @@ u0 = u.copy()
 # time loop - Lax method
 factor = (v * step) / (2 * spacing)
 
-for t in np.arange(start, end, step):
+for _ in np.arange(start, end, step):
     u_left = np.roll(u, 1)
     u_right = np.roll(u, -1)
     u1 = 0.5 * (u_right + u_left) - factor * (u_right - u_left)

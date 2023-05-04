@@ -40,9 +40,9 @@ class _InBoundsValidator:
             common_msg = f"out of bounds {self.bounds_str}"
 
             if np.isscalar(value):
-                msg = f"Value {value} of variable '{attr.name}' is " + common_msg
+                msg = f"Value {value} of variable '{attr.name}' is {common_msg}"
             else:
-                msg = f"Found value(s) in array '{attr.name}' " + common_msg
+                msg = f"Found value(s) in array '{attr.name}' {common_msg}"
 
             raise ValueError(msg)
 

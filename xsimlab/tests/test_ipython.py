@@ -196,7 +196,7 @@ def test_create_setup_magic(model_ip, mocker, line, expected_cell_input):
 
     model_ip.run_line_magic("create_setup", line)
 
-    expected = "# %create_setup " + line + expected_cell_input
+    expected = f"# %create_setup {line}{expected_cell_input}"
 
     patched_func = IPython.core.interactiveshell.InteractiveShell.set_next_input
     patched_func.assert_called_once_with(expected, replace=True)

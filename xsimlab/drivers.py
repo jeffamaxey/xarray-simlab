@@ -431,11 +431,7 @@ class XarraySimulationDriver(BaseSimulationDriver):
         self.parallel = parallel
         self.scheduler = scheduler
 
-        if parallel:
-            lock = dask.utils.get_scheduler_lock(scheduler=scheduler)
-        else:
-            lock = None
-
+        lock = dask.utils.get_scheduler_lock(scheduler=scheduler) if parallel else None
         self.store = ZarrSimulationStore(
             self.dataset,
             model,
@@ -452,18 +448,13 @@ class XarraySimulationDriver(BaseSimulationDriver):
         """
         self.store.consolidate()
 
-        # TODO: replace index variables data with simulation data
-        # (could be advanced Index objects that don't support serialization)
-
-        ds_out = (
+        return (
             self.store.open_as_xr_dataset()
             # rebuild multi-indexes
             .set_index(self.multi_indexes)
             # transpose back
             .pipe(_maybe_transpose_back, self.dataset, self._check_dims_option)
         )
-
-        return ds_out
 
     def run_model(self):
         """Run one or multiple simulation(s)."""

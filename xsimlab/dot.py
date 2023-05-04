@@ -48,7 +48,7 @@ VAR_EDGE_ATTRS = {"arrowhead": "none", "color": "#555555"}
 def _hash_variable(var):
     # issue with variables with the same name declared in different processes
     # return str(hash(var))
-    return str(id(var))
+    return id(var)
 
 
 def _get_target_keys(p_obj, var_name):

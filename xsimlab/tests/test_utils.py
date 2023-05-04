@@ -9,10 +9,8 @@ from xsimlab.tests.fixture_process import ExampleProcess
 
 def test_variables_dict():
     assert all(
-        [
-            isinstance(var, attr.Attribute)
-            for var in utils.variables_dict(ExampleProcess).values()
-        ]
+        isinstance(var, attr.Attribute)
+        for var in utils.variables_dict(ExampleProcess).values()
     )
 
     assert "other_attrib" not in utils.variables_dict(ExampleProcess)
@@ -72,8 +70,7 @@ def test_get_batch_size():
 class TestAttrMapping:
     @pytest.fixture
     def attr_mapping(self):
-        obj = utils.AttrMapping(mapping={"a": 1, "b": 2})
-        return obj
+        return utils.AttrMapping(mapping={"a": 1, "b": 2})
 
     def test_constructor(self):
         assert utils.AttrMapping()._mapping == {}
@@ -142,10 +139,10 @@ def test_frozen():
     with pytest.raises(AttributeError):
         x.update({"c": "C", "b": "B"})
     assert x.mapping == mapping
-    assert repr(x) in (
+    assert repr(x) in {
         "Frozen({'a': 'A', 'b': 'B'})",
         "Frozen({'b': 'B', 'a': 'A'})",
-    )
+    }
     # test iter
     assert set(x) == set(mapping)
     assert len(x) == 2

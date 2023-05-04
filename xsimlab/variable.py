@@ -37,10 +37,7 @@ def compute(self, method=None, *, cache=False):
 
         return method
 
-    if method is None:
-        return attach_to_metadata
-    else:
-        return attach_to_metadata(method)
+    return attach_to_metadata if method is None else attach_to_metadata(method)
 
 
 # monkey patch, waiting for cleaner solution:
@@ -66,7 +63,7 @@ def _as_dim_tuple(dims):
         dims = [(dims,)]
     elif isinstance(dims, list):
         dims = [
-            tuple([d]) if (isinstance(d, str) or d is MAIN_CLOCK) else tuple(d)
+            (d,) if (isinstance(d, str) or d is MAIN_CLOCK) else tuple(d)
             for d in dims
         ]
     else:
@@ -228,7 +225,7 @@ def variable(
         _init = True
         _repr = True
         # also check if MAIN_CLOCK is there
-        if any([MAIN_CLOCK in d for d in metadata["dims"]]):
+        if any(MAIN_CLOCK in d for d in metadata["dims"]):
             raise ValueError("Do not pass xs.MAIN_CLOCK into input vars dimensions")
 
     return attr.attrib(
@@ -579,5 +576,5 @@ def group_dict(name):
     }
 
     return attr.attrib(
-        metadata=metadata, init=True, repr=True, default=dict(), kw_only=True
+        metadata=metadata, init=True, repr=True, default={}, kw_only=True
     )

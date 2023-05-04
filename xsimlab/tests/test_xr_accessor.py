@@ -607,6 +607,7 @@ class TestSimlabAccessor:
         ],
     )
     def test_run_batch_dim(self, dims, data, clock, parallel, scheduler):
+
         @xs.process
         class P:
             in_var = xs.variable(dims=[(), "x"])
@@ -636,11 +637,7 @@ class TestSimlabAccessor:
             store=zarr.TempStore(),
         )
 
-        if clock is None:
-            coords = {}
-        else:
-            coords = {"clock": in_ds["clock"]}
-
+        coords = {} if clock is None else {"clock": in_ds["clock"]}
         expected = xr.DataArray(data, dims=dims, coords=coords) * 2
         xr.testing.assert_equal(out_ds["p__out_var"], expected)
 

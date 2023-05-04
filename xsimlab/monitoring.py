@@ -62,12 +62,13 @@ class ProgressBar(RuntimeHook):
             )
 
         self.custom_description = False
-        if "desc" in kwargs.keys():
+        if "desc" in kwargs:
             self.custom_description = True
 
         self.tqdm = tqdm
-        self.tqdm_kwargs = {"bar_format": "{bar} {percentage:3.0f}% | {desc} "}
-        self.tqdm_kwargs.update(kwargs)
+        self.tqdm_kwargs = {
+            "bar_format": "{bar} {percentage:3.0f}% | {desc} "
+        } | kwargs
 
     @runtime_hook("initialize", trigger="pre")
     def init_bar(self, model, context, state):

@@ -59,7 +59,7 @@ class ProfileU:
     )
 
     def run_step(self):
-        self._delta_u = sum((v for v in self.u_vars))
+        self._delta_u = sum(self.u_vars)
 
     def finalize_step(self):
         self.u += self._delta_u
@@ -127,8 +127,7 @@ class SourcePoint:
 
     @property
     def nearest_node(self):
-        idx = np.abs(self.x - self.loc).argmin()
-        return idx
+        return np.abs(self.x - self.loc).argmin()
 
     @property
     def source_rate(self):

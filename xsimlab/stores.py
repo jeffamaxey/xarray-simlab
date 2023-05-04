@@ -23,9 +23,9 @@ def _get_var_info(
 
     var_info = {}
 
-    var_clocks = {k: v for k, v in dataset.xsimlab.output_vars.items()}
-    var_clocks.update({vk: None for vk in model.index_vars})
-
+    var_clocks = dict(dataset.xsimlab.output_vars.items()) | {
+        vk: None for vk in model.index_vars
+    }
     for var_key, clock in var_clocks.items():
         var_cache = model.cache[var_key]
 
@@ -49,9 +49,7 @@ def _get_var_info(
 
 
 def ensure_no_dataset_conflict(zgroup, znames):
-    existing_datasets = [name for name in znames if name in zgroup]
-
-    if existing_datasets:
+    if existing_datasets := [name for name in znames if name in zgroup]:
         raise ValueError(
             f"Zarr path {zgroup.path} already contains the following datasets: "
             + ",".join(existing_datasets)
@@ -156,10 +154,7 @@ class ZarrSimulationStore:
         znames = [vi["name"] for vi in self.var_info.values()]
         ensure_no_dataset_conflict(self.zgroup, znames)
 
-        if lock is None:
-            self.lock = DummyLock()
-        else:
-            self.lock = lock
+        self.lock = DummyLock() if lock is None else lock
 
     def _init_clock_incrementers(self):
         clock_incs = {}
@@ -226,7 +221,7 @@ class ZarrSimulationStore:
             "fill_value": default_fill_value_from_dtype(dtype),
         }
 
-        zkwargs.update(var_info["encoding"])
+        zkwargs |= var_info["encoding"]
 
         try:
             # TODO: race condition? use lock?
@@ -364,11 +359,7 @@ class ZarrSimulationStore:
         self.consolidated = True
 
     def open_as_xr_dataset(self) -> xr.Dataset:
-        if self.in_memory:
-            chunks = None
-        else:
-            chunks = "auto"
-
+        chunks = None if self.in_memory else "auto"
         # overwrite decoding options
         open_kwargs = self.decoding.copy()
         open_kwargs.update(

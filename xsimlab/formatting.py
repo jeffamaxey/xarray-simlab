@@ -9,8 +9,7 @@ from .variable import VarIntent, VarType
 
 def _calculate_col_width(col_items):
     max_name_length = max((len(s) for s in col_items)) if col_items else 0
-    col_width = max(max_name_length, 7) + 6
-    return col_width
+    return max(max_name_length, 7) + 6
 
 
 def pretty_print(s, numchars):
@@ -24,7 +23,7 @@ def pretty_print(s, numchars):
 
 def maybe_truncate(s, maxlen=500):
     if len(s) > maxlen:
-        s = s[: (maxlen - 3)] + "..."
+        s = f"{s[:maxlen - 3]}..."
     return s
 
 
@@ -32,7 +31,7 @@ def wrap_indent(text, start="", length=None):
     if length is None:
         length = len(start)
     indent = "\n" + " " * length
-    return start + indent.join(x for x in text.splitlines())
+    return start + indent.join(iter(text.splitlines()))
 
 
 def format_var_dims(var):
@@ -45,8 +44,6 @@ def format_var_dims(var):
 
 
 def _summarize_var(var, process, col_width):
-    max_line_length = 70
-
     var_name = var.name
     var_type = var.metadata["var_type"]
     var_intent = var.metadata["intent"]
@@ -81,19 +78,18 @@ def _summarize_var(var, process, col_width):
     elif var_type == VarType.OBJECT:
         var_info = var.metadata["description"]
 
+    elif var_dims := format_var_dims(var):
+        var_info = " ".join([var_dims, var.metadata["description"]])
     else:
-        var_dims = format_var_dims(var)
-
-        if var_dims:
-            var_info = " ".join([var_dims, var.metadata["description"]])
-        else:
-            var_info = var.metadata["description"]
+        var_info = var.metadata["description"]
 
     left_col = pretty_print(f"    {var.name}", col_width)
 
     right_col = var_intent_str
     if var_info:
-        right_col += maybe_truncate(" " + var_info, max_line_length - col_width - 7)
+        max_line_length = 70
+
+        right_col += maybe_truncate(f" {var_info}", max_line_length - col_width - 7)
 
     return left_col + right_col
 
@@ -169,12 +165,11 @@ def add_attribute_section(process, placeholder="{{attributes}}"):
 
     current_doc = process.__doc__ or ""
 
-    if placeholder in current_doc:
-        new_doc = current_doc.replace(placeholder, fmt_section[4:])
-    else:
-        new_doc = f"{current_doc.rstrip()}\n\n{fmt_section}\n"
-
-    return new_doc
+    return (
+        current_doc.replace(placeholder, fmt_section[4:])
+        if placeholder in current_doc
+        else f"{current_doc.rstrip()}\n\n{fmt_section}\n"
+    )
 
 
 def repr_process(process):
@@ -198,16 +193,14 @@ def repr_process(process):
     if not var_section_details:
         var_section_details = "    *empty*"
 
-    stages_implemented = [
-        "    {}".format(s) for s in process.__xsimlab_executor__.stages
-    ]
-
-    stages_section_summary = "Simulation stages:"
-    if stages_implemented:
+    if stages_implemented := [
+        f"    {s}" for s in process.__xsimlab_executor__.stages
+    ]:
         stages_section_details = "\n".join(stages_implemented)
     else:
         stages_section_details = "    *no stage implemented*"
 
+    stages_section_summary = "Simulation stages:"
     process_repr = "\n".join(
         [
             header,

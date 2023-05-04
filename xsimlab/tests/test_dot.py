@@ -24,14 +24,12 @@ g_edge_labels_re = re.compile(r"\s*([-\w]*?)\s+->\s+([-\w]*?)\s+.*]")
 
 
 def _get_node_label(line):
-    m = g_node_label_re.match(line)
-    if m:
+    if m := g_node_label_re.match(line):
         return m.group(1)
 
 
 def _get_edge_labels(line):
-    m = g_edge_labels_re.match(line)
-    if m:
+    if m := g_edge_labels_re.match(line):
         return m.group(1, 2)
 
 

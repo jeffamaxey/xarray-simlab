@@ -187,19 +187,14 @@ class SimlabAccessor:
         :meth:`Dataset.xsimlab.update_clocks`
 
         """
-        # it is fine to cache the value here as inconsistency may appear
-        # only when deleting the main clock coordinate from the dataset,
-        # which would raise early anyway
-
         if self._main_clock_dim is not None:
             return self._main_clock_dim
-        else:
-            for c in self._ds.coords.values():
-                if c.attrs.get(self._main_clock_key, False):
-                    dim = c.dims[0]
-                    self._main_clock_dim = dim
-                    return dim
-            return None
+        for c in self._ds.coords.values():
+            if c.attrs.get(self._main_clock_key, False):
+                dim = c.dims[0]
+                self._main_clock_dim = dim
+                return dim
+        return None
 
     @property
     def master_clock_coord(self):
@@ -320,9 +315,7 @@ class SimlabAccessor:
 
     def _set_input_vars(self, model, input_vars):
 
-        invalid_inputs = set(input_vars) - set(model.input_vars)
-
-        if invalid_inputs:
+        if invalid_inputs := set(input_vars) - set(model.input_vars):
             raise KeyError(
                 ", ".join([str(k) for k in invalid_inputs])
                 + f" is/are not valid key(s) for input variables in model {model}",
@@ -393,7 +386,7 @@ class SimlabAccessor:
                     FutureWarning,
                     stacklevel=2,
                 )
-                o_vars.update({vn: k for vn in _flatten_outputs({k: v})[k]})
+                o_vars |= {vn: k for vn in _flatten_outputs({k: v})[k]}
 
             else:
                 o_vars[k] = v
@@ -403,12 +396,11 @@ class SimlabAccessor:
         # end of depreciated code block
 
         if not clear:
-            _output_vars = {k: v for k, v in self.output_vars.items()}
-            _output_vars.update(output_vars)
+            _output_vars = dict(self.output_vars.items())
+            _output_vars |= output_vars
             output_vars = _output_vars
 
-        invalid_outputs = set(output_vars) - set(model.all_vars)
-        if invalid_outputs:
+        if invalid_outputs := set(output_vars) - set(model.all_vars):
             raise KeyError(
                 ", ".join([f"{pn}__{vn}" for pn, vn in invalid_outputs])
                 + f" is/are not valid key(s) for variables in model {model}",
@@ -418,10 +410,9 @@ class SimlabAccessor:
         forbidden_model_vars = get_model_variables(
             model, func=lambda var: var.metadata["var_type"] in forbidden_output_types
         )
-        forbidden_outputs = set(output_vars) & set(forbidden_model_vars)
-        if forbidden_outputs:
+        if forbidden_outputs := set(output_vars) & set(forbidden_model_vars):
             raise ValueError(
-                f"Object or group variables can't be set as model outputs: "
+                "Object or group variables can't be set as model outputs: "
                 + ", ".join([f"{pn}__{vn}" for pn, vn in forbidden_outputs])
             )
 
@@ -433,7 +424,7 @@ class SimlabAccessor:
                     f"{clock!r} coordinate is not a valid clock coordinate."
                 )
 
-            xr_var_name = p_name + "__" + var_name
+            xr_var_name = f"{p_name}__{var_name}"
             clock_vars[clock].append(xr_var_name)
 
         for clock, var_list in clock_vars.items():
@@ -946,10 +937,7 @@ def create_setup(
     model = _maybe_get_model_from_context(model)
 
     def maybe_fill_default(ds):
-        if fill_default:
-            return ds.xsimlab.reset_vars(model=model)
-        else:
-            return ds
+        return ds.xsimlab.reset_vars(model=model) if fill_default else ds
 
     if master_clock is not None and main_clock is None:
         warnings.warn(

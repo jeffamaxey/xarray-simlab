@@ -29,36 +29,27 @@ def _get_embedded_process_cls(cls):
     if getattr(cls, "__xsimlab_process__", False):
         return cls
 
-    else:
-        embedded_cls = getattr(cls, "__xsimlab_cls__", None)
+    embedded_cls = getattr(cls, "__xsimlab_cls__", None)
 
-        if embedded_cls is None:
-            raise NotAProcessClassError(f"{cls!r} is not a process-decorated class.")
+    if embedded_cls is None:
+        raise NotAProcessClassError(f"{cls!r} is not a process-decorated class.")
 
-        elif embedded_cls.__name__ != cls.__name__:
-            raise NotAProcessClassError(
-                f"{cls!r} inherits from a process-decorated class "
-                "but is not itself process-decorated."
-            )
+    elif embedded_cls.__name__ != cls.__name__:
+        raise NotAProcessClassError(
+            f"{cls!r} inherits from a process-decorated class "
+            "but is not itself process-decorated."
+        )
 
-        return embedded_cls
+    return embedded_cls
 
 
 def get_process_cls(obj_or_cls):
-    if not inspect.isclass(obj_or_cls):
-        cls = type(obj_or_cls)
-    else:
-        cls = obj_or_cls
-
+    cls = obj_or_cls if inspect.isclass(obj_or_cls) else type(obj_or_cls)
     return _get_embedded_process_cls(cls)
 
 
 def get_process_obj(obj_or_cls):
-    if inspect.isclass(obj_or_cls):
-        cls = obj_or_cls
-    else:
-        cls = type(obj_or_cls)
-
+    cls = obj_or_cls if inspect.isclass(obj_or_cls) else type(obj_or_cls)
     return _get_embedded_process_cls(cls)()
 
 
@@ -145,7 +136,7 @@ def get_target_variable(var):
         if (target_process_cls, target_var) in visited:  # pragma: no cover
             cycle = "->".join(
                 [
-                    "{}.{}".format(cls.__name__, var.name)
+                    f"{cls.__name__}.{var.name}"
                     if cls is not None
                     else var.name
                     for cls, var in visited
@@ -393,10 +384,7 @@ class _RuntimeMethodExecutor:
 
         signal = self.meth(p_obj, *args)
 
-        if signal is None:
-            return RuntimeSignal.NONE
-        else:
-            return RuntimeSignal(signal)
+        return RuntimeSignal.NONE if signal is None else RuntimeSignal(signal)
 
 
 def runtime(meth=None, args=None):
@@ -435,10 +423,7 @@ def runtime(meth=None, args=None):
         func.__xsimlab_executor__ = _RuntimeMethodExecutor(func, args)
         return func
 
-    if meth is not None:
-        return wrapper(meth)
-    else:
-        return wrapper
+    return wrapper(meth) if meth is not None else wrapper
 
 
 class SimulationStage(Enum):
@@ -495,10 +480,7 @@ def _get_out_variables(cls):
         var_type = var.metadata["var_type"]
         var_intent = var.metadata["intent"]
 
-        if var_type != VarType.ON_DEMAND and var_intent != VarIntent.IN:
-            return True
-        else:
-            return False
+        return var_type != VarType.ON_DEMAND and var_intent != VarIntent.IN
 
     return filter_variables(cls, func=filter_out)
 
@@ -526,14 +508,13 @@ class _ProcessExecutor:
 
         if executor is None:
             return {}, RuntimeSignal.NONE
-        else:
-            signal_out = executor.execute(p_obj, runtime_context, state=state)
+        signal_out = executor.execute(p_obj, runtime_context, state=state)
 
-            skeys = [p_obj.__xsimlab_state_keys__[k] for k in self.out_vars]
-            sobj = p_obj.__xsimlab_state__
-            state_out = {k: sobj[k] for k in skeys if k in sobj}
+        skeys = [p_obj.__xsimlab_state_keys__[k] for k in self.out_vars]
+        sobj = p_obj.__xsimlab_state__
+        state_out = {k: sobj[k] for k in skeys if k in sobj}
 
-            return state_out, signal_out
+        return state_out, signal_out
 
 
 def _process_cls_init(obj):
@@ -682,11 +663,7 @@ def process(maybe_cls=None, autodoc=True, apply_attrs=True) -> Type[Process]:
     """
 
     def wrap(cls):
-        if apply_attrs:
-            attr_cls = attr.attrs(cls, repr=False)
-        else:
-            attr_cls = cls
-
+        attr_cls = attr.attrs(cls, repr=False) if apply_attrs else cls
         builder = _ProcessBuilder(attr_cls)
 
         builder.add_properties()
@@ -698,10 +675,7 @@ def process(maybe_cls=None, autodoc=True, apply_attrs=True) -> Type[Process]:
 
         return attr_cls
 
-    if maybe_cls is None:
-        return wrap
-    else:
-        return wrap(maybe_cls)
+    return wrap if maybe_cls is None else wrap(maybe_cls)
 
 
 def process_info(process, buf=None):

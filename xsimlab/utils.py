@@ -91,14 +91,12 @@ def normalize_encoding(encoding, extra_keys=None):
 
 
 def get_batch_size(xr_dataset, batch_dim):
-    if batch_dim is not None:
-        if batch_dim not in xr_dataset.dims:
-            raise KeyError(f"Batch dimension {batch_dim} missing in input dataset")
-
-        return xr_dataset.dims[batch_dim]
-
-    else:
+    if batch_dim is None:
         return -1
+    if batch_dim not in xr_dataset.dims:
+        raise KeyError(f"Batch dimension {batch_dim} missing in input dataset")
+
+    return xr_dataset.dims[batch_dim]
 
 
 class AttrMapping:
@@ -164,9 +162,11 @@ class AttrMapping:
         return ValuesView(self)
 
     def __eq__(self, other):
-        if not isinstance(other, (Mapping, AttrMapping)):
-            return NotImplemented
-        return dict(self.items()) == dict(other.items())
+        return (
+            dict(self.items()) == dict(other.items())
+            if isinstance(other, (Mapping, AttrMapping))
+            else NotImplemented
+        )
 
     __reversed__ = None
 

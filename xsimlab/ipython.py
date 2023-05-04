@@ -27,8 +27,7 @@ def format_var_comment(var, verbose=0):
     comment = ""
 
     if verbose:
-        var_desc = var.metadata["description"]
-        if var_desc:
+        if var_desc := var.metadata["description"]:
             comment += textwrap.fill(
                 var_desc, width=86, initial_indent="# ", subsequent_indent="# "
             )
@@ -37,15 +36,13 @@ def format_var_comment(var, verbose=0):
         comment += "\n"
 
     if verbose > 1:
-        var_dims = format_var_dims(var)
-        if var_dims:
+        if var_dims := format_var_dims(var):
             comment += f"#     dimensions: {var_dims}\n"
         if var.metadata["static"]:
             comment += f"#     static: main clock dimension not supported\n"
 
     if verbose > 2:
-        var_attrs = var.metadata.get("attrs", False)
-        if var_attrs:
+        if var_attrs := var.metadata.get("attrs", False):
             for k, v in var_attrs.items():
                 comment += f"#     {k}: {v}\n"
 
@@ -74,9 +71,9 @@ def format_input_vars(
             comment = format_var_comment(var, verbose=verbose)
 
             if nested:
-                plines.append(comment + f"'{vn}': {default_val},")
+                plines.append(f"{comment}'{vn}': {default_val},")
             else:
-                lines.append(comment + f"'{pn}__{vn}': {default_val},")
+                lines.append(f"{comment}'{pn}__{vn}': {default_val},")
 
         if nested and plines:
             pfmt = textwrap.indent("\n".join(plines), " " * 4)
@@ -140,7 +137,7 @@ class SimulationMagics(Magics):
             ),
         )
 
-        content = f"# %create_setup {line}" + rendered
+        content = f"# %create_setup {line}{rendered}"
 
         self.shell.set_next_input(content, replace=True)
 

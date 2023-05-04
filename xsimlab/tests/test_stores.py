@@ -10,10 +10,7 @@ from zarr.util import object_codecs
 
 @pytest.fixture(params=["directory", zarr.MemoryStore])
 def zobject(request, tmpdir):
-    if request.param == "directory":
-        return str(tmpdir)
-    else:
-        return request.param()
+    return str(tmpdir) if request.param == "directory" else request.param()
 
 
 @pytest.fixture
@@ -26,9 +23,7 @@ def in_ds(in_dataset, model):
 
 @pytest.fixture
 def store(in_ds, model, zobject):
-    zstore = ZarrSimulationStore(in_ds, model, zobject=zobject)
-
-    return zstore
+    return ZarrSimulationStore(in_ds, model, zobject=zobject)
 
 
 @pytest.fixture
